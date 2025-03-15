@@ -1,29 +1,55 @@
+import { create } from "zustand";
 
-import { create } from 'zustand'  // Import the create function from the zustand library.
+export const useProductStore = create((set) => ({
+	products: [],
+	setProducts: (products) => set({ products }),
+	createProduct: async (newProduct) => {
+		if (!newProduct.name || !newProduct.image || !newProduct.price) {
+			return { success: false, message: "Please fill in all fields." };
+		}
+		const res = await fetch("/api/products", {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+			},
+			body: JSON.stringify(newProduct),
+		});
+		const data = await res.json();
+		set((state) => ({ products: [...state.products, data.data] }));
+		return { success: true, message: "Product created successfully" };
+	},
+	fetchProducts: async () => {
+		const res = await fetch("/api/products");
+		const data = await res.json();
+		set({ products: data.data });
+	},
+	deleteProduct: async (pid) => {
+		const res = await fetch(`/api/products/${pid}`, {
+			method: "DELETE",
+		});
+		const data = await res.json();
+		if (!data.success) return { success: false, message: data.message };
 
-export const useProductStore = create((set) => ({ // Create a store using the create function.
-    products:[],  // Initialize the products array.
-    setProducts: (products) => set({products}),  
-    createProduct: async (newProduct) => {         // Create a createProduct function that takes a newProduct object as an argument.
-        if (!newProduct.name || !newProduct.price || !newProduct.image) {  // Check if the newProduct object has all the required fields.
-            return { success: false, message: "Please fill in all fields" }  // Return an error message if the newProduct object is missing any fields.
-        }
-        const res = await fetch('/api/products', {  //Send a POST request to the /api/products endpoint with the newProduct object as the body.
-            method: 'POST',    // Set the method of the request to POST.
-            headers: {
-                'Content-Type': 'application/json', // Set the Content-Type header to application/json.
-            },
-            body: JSON.stringify(newProduct), // Convert the newProduct object to a JSON string and set it as the body of the request.
-        })
-        const data = await res.json(); // Parse the response body as JSON.
-        set((state) => ({ products: [...state.products, data.data] }));
-        return { success: true, message: "Product created successfully" }; // Return a success message if the product was created successfully. 
-    },
+		// update the ui immediately, without needing a refresh
+		set((state) => ({ products: state.products.filter((product) => product._id !== pid) }));
+		return { success: true, message: data.message };
+	},
+	updateProduct: async (pid, updatedProduct) => {
+		const res = await fetch(`/api/products/${pid}`, {
+			method: "PUT",
+			headers: {
+				"Content-Type": "application/json",
+			},
+			body: JSON.stringify(updatedProduct),
+		});
+		const data = await res.json();
+		if (!data.success) return { success: false, message: data.message };
 
-    fetchProducts: async () => {   // Create a fetchProducts function that fetches the products from the server.
-        const res = await fetch("/api/products");  // Send a GET request to the /api/products endpoint.
-        const data = await res.json();  // Parse the response body as JSON.
-        set({products:data.data});  // Update the products array in the store with the fetched products.
-    }
+		// update the ui immediately, without needing a refresh
+		set((state) => ({
+			products: state.products.map((product) => (product._id === pid ? data.data : product)),
+		}));
+
+		return { success: true, message: data.message};
+	},
 }));
-  

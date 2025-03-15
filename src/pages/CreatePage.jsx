@@ -31,8 +31,7 @@ const CreatePage = () => {
 				isClosable: true,
 			});
 		}
-	setNewProduct({ name: "", price: "", image: "" });   // Reset the newProduct state to an empty object after adding the product.
-
+	    setNewProduct({ name: "", price: "", image: "" });   // Reset the newProduct state to an empty object after adding the product.
 	};
 
 	return (
